@@ -16,6 +16,7 @@ class Movies extends Component {
     pageSize: 4,
     currentPage: 1,
     searchQuery: "",
+    selectedGenre: null,
     sortColumn: { path: "title", order: "asc" },
   };
 
@@ -43,10 +44,8 @@ class Movies extends Component {
     this.setState({ currentPage: page });
   };
 
-  handleSearchChange = ({ currentTarget: input }) => {
-    console.log(input.value);
-    const searchQuery = input.value;
-    this.setState({ searchQuery, selectedGenre: "" });
+  handleSearch = (query) => {
+    this.setState({ searchQuery: query, selectedGenre: null, currentPage: 1 });
   };
 
   handleGenreSelect = (genre) => {
@@ -67,21 +66,13 @@ class Movies extends Component {
       searchQuery,
     } = this.state;
 
-    var filtered;
-    if (selectedGenre) {
-      console.log("Selected a genre");
-      filtered =
-        selectedGenre && selectedGenre._id
-          ? allMovies.filter((m) => m.genre._id === selectedGenre._id)
-          : allMovies;
-    } else {
-      console.log("By search");
-      filtered = searchQuery
-        ? allMovies.filter((m) =>
-            m.title.toLowerCase().includes(searchQuery.toLowerCase())
-          )
-        : allMovies;
-    }
+    let filtered = allMovies;
+    if (searchQuery)
+      filtered = allMovies.filter((m) =>
+        m.title.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    else if (selectedGenre && selectedGenre._id)
+      filtered = allMovies.filter((m) => m.genre._id === selectedGenre._id);
 
     const sorted = _.orderBy(filtered, sortColumn["path"], sortColumn["order"]);
     const movies = paginate(sorted, currentPage, pageSize);
@@ -91,7 +82,14 @@ class Movies extends Component {
 
   render() {
     const { length: count } = this.state.movies;
-    const { pageSize, currentPage, sortColumn } = this.state;
+    const {
+      pageSize,
+      currentPage,
+      sortColumn,
+      searchQuery,
+      genres,
+      selectedGenre,
+    } = this.state;
 
     if (count === 0) return <p>There are no movies in the database.</p>;
 
@@ -101,8 +99,8 @@ class Movies extends Component {
       <div className="row">
         <div className="col-3">
           <ListGroup
-            items={this.state.genres}
-            selectedItem={this.state.selectedGenre}
+            items={genres}
+            selectedItem={selectedGenre}
             onItemSelect={this.handleGenreSelect}
           />
         </div>
@@ -115,10 +113,7 @@ class Movies extends Component {
             New Movie
           </Link>
           <p>There are {totalCount} movies in database.</p>
-          <Search
-            onChange={this.handleSearchChange}
-            value={this.state.searchQuery}
-          />
+          <Search onChange={this.handleSearch} value={searchQuery} />
           <MoviesTable
             movies={movies}
             sortColumn={sortColumn}
